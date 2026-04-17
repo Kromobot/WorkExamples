@@ -1,0 +1,42 @@
+@startuml SequnceForImport
+
+autonumber 
+actor "Процесс/Триггер" as Proc
+participant "1580 Отраслевая аналитика" as API
+participant "1642_55 Подсистема данных с потребителями" as GW
+participant "Витрина данных" as DM
+database "БД сервиса 1580" as DB
+participant "Модуль расчётов" as Calc
+
+
+Proc -> API: Старт импорта {dataset, period}
+API -> GW: Запрос данных
+GW -> DM: Запрос данных
+DM --> GW: Данные (пакет)
+GW --> API: Данные (пакет)
+
+
+loop Пока есть данные
+API -> GW: Запрос следующего пакета
+GW -> DM: Запрос следующего пакета
+DM --> GW: Данные (пакет или пусто)
+GW --> API: Данные (пакет или пусто)
+API -> DB: Сохранить батч (UPSERT)
+end
+
+
+alt Импорт успешен
+API -> Calc: Запуск расчётов 
+Calc -> DB: Читать сохранённые данные
+DB --> Calc: rows
+Calc -> DB: Сохранить результаты 
+Calc --> API: OK 
+API --> Proc: Готово 
+else Сбой витрины
+DM --> GW: 4xx/5xx/timeout
+GW --> API: ошибка
+API --> Proc: Ошибка импорта
+end
+
+
+@enduml

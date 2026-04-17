@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" id="Defs_ManageAttributes_v1" targetNamespace="http://example.com/bpmn/attributes/manage" exporter="Camunda Modeler" exporterVersion="5.38.0">
+  <process id="process_manage_attributes" name="Управление атрибутами" isExecutable="false">
+    <startEvent id="Start" name="Начало" />
+    <userTask id="UT_OpenModule" name="Открыть модуль «Атрибуты»" />
+    <serviceTask id="ST_CheckPerms" name="Проверка прав доступа" />
+    <exclusiveGateway id="GX_Perms" name="Права достаточно?" />
+    <endEvent id="End_NoAccess" name="Доступ запрещён" />
+    <userTask id="UT_SelectAction" name="Выбрать действие" />
+    <exclusiveGateway id="GX_Action_1" name="Создать?" />
+    <userTask id="UT_SelectScope" name="Выбрать область (объект/зона)" />
+    <userTask id="UT_SelectTarget" name="Выбрать конкретный объект/зону" />
+    <userTask id="UT_DefineAttribute" name="Задать атрибут (имя/тип/обяз./справочник)" />
+    <serviceTask id="ST_SaveCreate" name="Сохранить новый атрибут" />
+    <exclusiveGateway id="GX_Action_2" name="Редактировать?" />
+    <userTask id="UT_SelectAttr_Edit" name="Выбрать атрибут" />
+    <userTask id="UT_EditAttr" name="Изменить свойства/значения по умолчанию" />
+    <serviceTask id="ST_SaveEdit" name="Сохранить изменения атрибута" />
+    <exclusiveGateway id="GX_Action_3" name="Удалить?" />
+    <userTask id="UT_SelectAttr_Del" name="Выбрать атрибут" />
+    <userTask id="UT_ConfirmDelete" name="Подтвердить удаление" />
+    <serviceTask id="ST_DoDelete" name="Удалить атрибут из БД" />
+    <serviceTask id="ST_Refresh" name="Обновить отображение/индексы поиска" />
+    <endEvent id="End_Success" name="Изменения применены" />
+    <sequenceFlow id="F1" sourceRef="Start" targetRef="UT_OpenModule" />
+    <sequenceFlow id="F2" sourceRef="UT_OpenModule" targetRef="ST_CheckPerms" />
+    <sequenceFlow id="F3" sourceRef="ST_CheckPerms" targetRef="GX_Perms" />
+    <sequenceFlow id="F4_yes" name="да" sourceRef="GX_Perms" targetRef="UT_SelectAction" />
+    <sequenceFlow id="F4_no" name="нет" sourceRef="GX_Perms" targetRef="End_NoAccess" />
+    <sequenceFlow id="F5" sourceRef="UT_SelectAction" targetRef="GX_Action_1" />
+    <sequenceFlow id="F6_create" name="да" sourceRef="GX_Action_1" targetRef="UT_SelectScope" />
+    <sequenceFlow id="F6_else" name="нет" sourceRef="GX_Action_1" targetRef="GX_Action_2" />
+    <sequenceFlow id="F7" sourceRef="UT_SelectScope" targetRef="UT_SelectTarget" />
+    <sequenceFlow id="F8" sourceRef="UT_SelectTarget" targetRef="UT_DefineAttribute" />
+    <sequenceFlow id="F9" sourceRef="UT_DefineAttribute" targetRef="ST_SaveCreate" />
+    <sequenceFlow id="F10" sourceRef="ST_SaveCreate" targetRef="ST_Refresh" />
+    <sequenceFlow id="F11_edit" name="да" sourceRef="GX_Action_2" targetRef="UT_SelectAttr_Edit" />
+    <sequenceFlow id="F11_else" name="нет" sourceRef="GX_Action_2" targetRef="GX_Action_3" />
+    <sequenceFlow id="F12" sourceRef="UT_SelectAttr_Edit" targetRef="UT_EditAttr" />
+    <sequenceFlow id="F13" sourceRef="UT_EditAttr" targetRef="ST_SaveEdit" />
+    <sequenceFlow id="F14" sourceRef="ST_SaveEdit" targetRef="ST_Refresh" />
+    <sequenceFlow id="F15_delete" name="да" sourceRef="GX_Action_3" targetRef="UT_SelectAttr_Del" />
+    <sequenceFlow id="F15_else" name="нет" sourceRef="GX_Action_3" targetRef="ST_Refresh" />
+    <sequenceFlow id="F16" sourceRef="UT_SelectAttr_Del" targetRef="UT_ConfirmDelete" />
+    <sequenceFlow id="F17" sourceRef="UT_ConfirmDelete" targetRef="ST_DoDelete" />
+    <sequenceFlow id="F18" sourceRef="ST_DoDelete" targetRef="ST_Refresh" />
+    <sequenceFlow id="F19" sourceRef="ST_Refresh" targetRef="End_Success" />
+  </process>
+  <bpmndi:BPMNDiagram id="DI_ManageAttributes_v1">
+    <bpmndi:BPMNPlane id="Plane_ManageAttributes_v1" bpmnElement="process_manage_attributes">
+      <bpmndi:BPMNShape id="DI_Start" bpmnElement="Start">
+        <omgdc:Bounds x="152" y="230" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="151" y="266" width="39" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_OpenModule" bpmnElement="UT_OpenModule">
+        <omgdc:Bounds x="270" y="218" width="320" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_CheckPerms" bpmnElement="ST_CheckPerms">
+        <omgdc:Bounds x="650" y="218" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Perms" bpmnElement="GX_Perms" isMarkerVisible="true">
+        <omgdc:Bounds x="1235" y="223" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1295" y="234" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectAction" bpmnElement="UT_SelectAction">
+        <omgdc:Bounds x="1450" y="135" width="300" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_NoAccess" bpmnElement="End_NoAccess">
+        <omgdc:Bounds x="1582" y="342" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1556" y="378" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_1" bpmnElement="GX_Action_1" isMarkerVisible="true">
+        <omgdc:Bounds x="2075" y="140" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2135" y="158" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_2" bpmnElement="GX_Action_2" isMarkerVisible="true">
+        <omgdc:Bounds x="2075" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1981.5" y="293" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_3" bpmnElement="GX_Action_3" isMarkerVisible="true">
+        <omgdc:Bounds x="2075" y="395" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2017" y="413" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectAttr_Del" bpmnElement="UT_SelectAttr_Del">
+        <omgdc:Bounds x="2200" y="440" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_ConfirmDelete" bpmnElement="UT_ConfirmDelete">
+        <omgdc:Bounds x="2540" y="440" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_DoDelete" bpmnElement="ST_DoDelete">
+        <omgdc:Bounds x="2850" y="440" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectAttr_Edit" bpmnElement="UT_SelectAttr_Edit">
+        <omgdc:Bounds x="2200" y="270" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectScope" bpmnElement="UT_SelectScope">
+        <omgdc:Bounds x="2200" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectTarget" bpmnElement="UT_SelectTarget">
+        <omgdc:Bounds x="2540" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_DefineAttribute" bpmnElement="UT_DefineAttribute">
+        <omgdc:Bounds x="2820" y="80" width="320" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_EditAttr" bpmnElement="UT_EditAttr">
+        <omgdc:Bounds x="2510" y="270" width="320" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_SaveEdit" bpmnElement="ST_SaveEdit">
+        <omgdc:Bounds x="2850" y="270" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_SaveCreate" bpmnElement="ST_SaveCreate">
+        <omgdc:Bounds x="3170" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_Refresh" bpmnElement="ST_Refresh">
+        <omgdc:Bounds x="3770" y="135" width="300" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_Success" bpmnElement="End_Success">
+        <omgdc:Bounds x="4272" y="147" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="4261" y="183" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DE_F1" bpmnElement="F1">
+        <omgdi:waypoint x="188" y="248" />
+        <omgdi:waypoint x="270" y="248" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F2" bpmnElement="F2">
+        <omgdi:waypoint x="590" y="248" />
+        <omgdi:waypoint x="650" y="248" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F3" bpmnElement="F3">
+        <omgdi:waypoint x="910" y="248" />
+        <omgdi:waypoint x="1235" y="248" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F4_yes" bpmnElement="F4_yes">
+        <omgdi:waypoint x="1260" y="223" />
+        <omgdi:waypoint x="1260" y="165" />
+        <omgdi:waypoint x="1450" y="165" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1361" y="173" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F4_no" bpmnElement="F4_no">
+        <omgdi:waypoint x="1260" y="273" />
+        <omgdi:waypoint x="1260" y="360" />
+        <omgdi:waypoint x="1582" y="360" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1402" y="338" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F5" bpmnElement="F5">
+        <omgdi:waypoint x="1750" y="165" />
+        <omgdi:waypoint x="2075" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F6_create" bpmnElement="F6_create">
+        <omgdi:waypoint x="2100" y="140" />
+        <omgdi:waypoint x="2100" y="110" />
+        <omgdi:waypoint x="2200" y="110" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2109" y="113" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F6_else" bpmnElement="F6_else">
+        <omgdi:waypoint x="2100" y="190" />
+        <omgdi:waypoint x="2100" y="275" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2106" y="217" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F7" bpmnElement="F7">
+        <omgdi:waypoint x="2460" y="110" />
+        <omgdi:waypoint x="2540" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F8" bpmnElement="F8">
+        <omgdi:waypoint x="2800" y="110" />
+        <omgdi:waypoint x="2820" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F9" bpmnElement="F9">
+        <omgdi:waypoint x="3140" y="110" />
+        <omgdi:waypoint x="3170" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F10" bpmnElement="F10">
+        <omgdi:waypoint x="3430" y="110" />
+        <omgdi:waypoint x="3490" y="110" />
+        <omgdi:waypoint x="3490" y="165" />
+        <omgdi:waypoint x="3770" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F11_edit" bpmnElement="F11_edit">
+        <omgdi:waypoint x="2125" y="300" />
+        <omgdi:waypoint x="2200" y="300" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2154" y="278" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F11_else" bpmnElement="F11_else">
+        <omgdi:waypoint x="2100" y="325" />
+        <omgdi:waypoint x="2100" y="395" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2106" y="351" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F12" bpmnElement="F12">
+        <omgdi:waypoint x="2460" y="300" />
+        <omgdi:waypoint x="2510" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F13" bpmnElement="F13">
+        <omgdi:waypoint x="2830" y="300" />
+        <omgdi:waypoint x="2850" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F14" bpmnElement="F14">
+        <omgdi:waypoint x="3110" y="300" />
+        <omgdi:waypoint x="3490" y="300" />
+        <omgdi:waypoint x="3490" y="165" />
+        <omgdi:waypoint x="3770" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F15_delete" bpmnElement="F15_delete">
+        <omgdi:waypoint x="2100" y="445" />
+        <omgdi:waypoint x="2100" y="470" />
+        <omgdi:waypoint x="2200" y="470" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2096" y="450" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F15_else" bpmnElement="F15_else">
+        <omgdi:waypoint x="2125" y="420" />
+        <omgdi:waypoint x="3490" y="420" />
+        <omgdi:waypoint x="3490" y="165" />
+        <omgdi:waypoint x="3770" y="165" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2800" y="395" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F16" bpmnElement="F16">
+        <omgdi:waypoint x="2460" y="470" />
+        <omgdi:waypoint x="2540" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F17" bpmnElement="F17">
+        <omgdi:waypoint x="2800" y="470" />
+        <omgdi:waypoint x="2850" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F18" bpmnElement="F18">
+        <omgdi:waypoint x="3110" y="470" />
+        <omgdi:waypoint x="3490" y="470" />
+        <omgdi:waypoint x="3490" y="165" />
+        <omgdi:waypoint x="3770" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F19" bpmnElement="F19">
+        <omgdi:waypoint x="4070" y="165" />
+        <omgdi:waypoint x="4272" y="165" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

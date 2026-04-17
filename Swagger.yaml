@@ -1,0 +1,1140 @@
+openapi: 3.0.3
+info:
+  title: Сервис планировки зданий и помещений — API
+  version: "1.0.1"
+  description: |
+    Открытый API для управления офисами, этажами, слоями, зонами и объектами.
+    Аутентификация — Bearer JWT. Часть операций ограничена ролями **ADMIN**/**MODERATOR**.
+    В ответах предусмотрены граничные случаи и коды ошибок. Все ответы описаны и снабжены примером.
+servers:
+  - url: http://90.156.169.29:3000
+    description: Стенд фронта
+  - url: http://10.10.146.207:8080
+    description: Прод. Стенд
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Offices
+  - name: Floors
+  - name: Floor Images
+  - name: Layers
+  - name: Zones
+  - name: Zone Objects
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  headers:
+    X-RateLimit-Limit:
+      description: Лимит запросов за окно
+      schema: { type: integer, example: 1000 }
+    X-RateLimit-Remaining:
+      description: Остаток запросов в текущем окне
+      schema: { type: integer, example: 997 }
+    X-RateLimit-Reset:
+      description: Время сброса окна в UNIX time
+      schema: { type: integer, example: 1699999999 }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: "Поле email обязательно"
+        details:
+          description: Произвольные структурированные детали об ошибке
+          oneOf:
+            - type: object
+            - type: array
+        traceId:
+          type: string
+          example: "01HZX3S4AY4R0M6X8QK8ZBP6S8"
+    Role:
+      type: string
+      enum: [ADMIN, MODERATOR, USER]
+    UserPublic:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 1 }
+        email: { type: string, format: email, example: user@example.com }
+        role: { $ref: '#/components/schemas/Role' }
+        username: { type: string, nullable: true, example: "ivan.petrov" }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        middleName: { type: string, nullable: true }
+        phone: { type: string, nullable: true, example: "+7 999 000-00-00" }
+        workplaceNumber: { type: string, nullable: true, example: "B2-305" }
+    AuthRegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        role:
+          allOf: [ { $ref: '#/components/schemas/Role' } ]
+          description: |
+            Игнорируется для первого зарегистрированного пользователя (он станет ADMIN).
+            Для остальных — берётся переданное значение, иначе USER.
+    AuthRegisterResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user: { $ref: '#/components/schemas/UserPublic' }
+        token: { type: string, example: "eyJhbGciOi..." }
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    AuthLoginResponse:
+      $ref: '#/components/schemas/AuthRegisterResponse'
+    MeResponse:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/UserPublic' }
+    Office:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 10, description: "offices.office_id" }
+        name: { type: string, example: "HQ Т1" }
+        address: { type: string, example: "ул. Пушкина, д. 1" }
+        city: { type: string, example: "Москва" }
+        country: { type: string, example: "Россия" }
+    OfficeCreateRequest:
+      type: object
+      required: [name, address, city, country]
+      properties:
+        name: { type: string, minLength: 1 }
+        address: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1 }
+        country: { type: string, minLength: 1 }
+    OfficeListResponse:
+      type: object
+      properties:
+        offices:
+          type: array
+          items: { $ref: '#/components/schemas/Office' }
+    OfficeCreateResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+    OfficeUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        address: { type: string }
+        city: { type: string }
+        country: { type: string }
+    Floor:
+      type: object
+      properties:
+        id: { type: integer, format: int64, description: "floors.floor_id" }
+        number: { type: integer, example: 3, description: "Уникален в рамках офиса" }
+        imageUrl: { type: string, nullable: true }
+    FloorListResponse:
+      type: object
+      properties:
+        floors:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              number: { type: integer }
+    FloorCreateRequest:
+      type: object
+      required: [floorNumber]
+      properties:
+        floorNumber: { type: integer, minimum: -10, maximum: 300 }
+    FloorCreateResponse:
+      type: object
+      properties:
+        floorId: { type: integer, format: int64 }
+    LayerType:
+      type: string
+      enum: [custom, firesafe]
+    LayerListItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/LayerType' }
+        hasImage:
+          type: boolean
+          nullable: true
+          description: Только для firesafe-слоя
+    Layer:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/LayerType' }
+        imageUrl:
+          type: string
+          nullable: true
+          description: Для firesafe
+        zones:
+          type: array
+          items: { $ref: '#/components/schemas/Zone' }
+          description: Для custom
+    LayerCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+    ZoneStatus:
+      type: string
+      enum: [free, occupied]
+    Coordinates:
+      type: array
+      description: "[x1, y1, x2, y2, ...]. Минимум 3 точки (6 чисел)."
+      minItems: 6
+      items:
+        type: number
+    Zone:
+      type: object
+      properties:
+        id: { type: integer, format: int64, description: "zones.zone_id" }
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ZoneStatus' }
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+    ZoneCreateRequest:
+      type: object
+      required: [coordinates]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        status: { $ref: '#/components/schemas/ZoneStatus' }
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+    ZoneCreateResponse:
+      type: object
+      properties:
+        zoneId: { type: integer, format: int64 }
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+    ZonePatchRequest:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ZoneStatus' }
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+    CatalogRef:
+      type: object
+      properties:
+        id: { type: string, example: "chair" }
+        displayName: { type: string, example: "Стул офисный" }
+        iconKey: { type: string, example: "chair-01" }
+        category: { type: string, example: "furniture" }
+    ZoneObject:
+      type: object
+      properties:
+        id: { type: integer }
+        zoneId: { type: integer }
+        zoneInventoryId: { type: integer }
+        x: { type: number }
+        y: { type: number }
+        rotation: { type: number, default: 0 }
+        catalog:
+          $ref: '#/components/schemas/CatalogRef'
+    ZoneObjectCreateRequest:
+      type: object
+      required: [zoneInventoryId, x, y]
+      properties:
+        zoneInventoryId: { type: integer, minimum: 1 }
+        x: { type: number }
+        y: { type: number }
+        rotation: { type: number, default: 0 }
+    ZoneObjectPatchRequest:
+      type: object
+      properties:
+        x: { type: number }
+        y: { type: number }
+        rotation: { type: number }
+
+  examples:
+    ExampleOk:
+      summary: OK
+      value: { ok: true }
+    ExampleUnauthorized:
+      summary: Unauthorized
+      value: { code: "UNAUTHORIZED", message: "Missing or invalid token", traceId: "01HX..." }
+    ExampleForbidden:
+      summary: Forbidden
+      value: { code: "FORBIDDEN", message: "Not enough permissions", traceId: "01HX..." }
+    ExampleNotFound:
+      summary: Not Found
+      value: { code: "NOT_FOUND", message: "Resource not found", traceId: "01HX..." }
+    ExampleConflictOfficeHasFloors:
+      summary: Conflict — офис содержит этажи
+      value: { code: "CONFLICT", message: "Office has floors. Delete floors first.", traceId: "01HX..." }
+    ExampleValidationCoordinates:
+      summary: Validation error — координаты зоны
+      value:
+        code: "VALIDATION_ERROR"
+        message: "coordinates must contain even number of values >= 6"
+        details: { field: "coordinates", reason: "min_items" }
+        traceId: "01HX..."
+    ExampleValidationFloorDuplicate:
+      summary: Duplicate floor number
+      value: { code: "CONFLICT", message: "Floor number already exists", traceId: "01HX..." }
+    ExampleUnsupportedMediaType:
+      summary: Unsupported media type
+      value: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Only image/* allowed", traceId: "01HX..." }
+    ExamplePayloadTooLarge:
+      summary: Payload too large
+      value: { code: "PAYLOAD_TOO_LARGE", message: "File exceeds 10MB limit", traceId: "01HX..." }
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Проверка жизнеспособности сервиса
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+              examples:
+                ok:
+                  $ref: '#/components/examples/ExampleOk'
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      description: |
+        Первый пользователь в системе автоматически получает роль ADMIN, вне зависимости от переданного `role`.
+        Для остальных пользователей — берётся переданная роль (`ADMIN|MODERATOR|USER`), иначе `USER`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthRegisterRequest' }
+            examples:
+              valid:
+                value: { email: "admin@t1.ru", password: "secret123", role: "ADMIN" }
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthRegisterResponse' }
+              examples:
+                created:
+                  value:
+                    user:
+                      id: 1
+                      email: "admin@t1.ru"
+                      role: "ADMIN"
+                    token: "eyJhbGciOi..."
+        '400':
+          description: Ошибка валидации (например, короткий пароль, неверный email)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                bad_email:
+                  value: { code: "VALIDATION_ERROR", message: "email must be a valid email", details: { field: "email" }, traceId: "01HX..." }
+        '409':
+          description: Email уже существует
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                taken:
+                  value: { code: "CONFLICT", message: "email is taken", traceId: "01HX..." }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Логин
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthLoginRequest' }
+            examples:
+              login:
+                value: { email: "admin@t1.ru", password: "secret123" }
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthLoginResponse' }
+              examples:
+                ok:
+                  value:
+                    user: { id: 1, email: "admin@t1.ru", role: "ADMIN" }
+                    token: "eyJhbGciOi..."
+        '400':
+          description: Не хватает полей
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                missing:
+                  value: { code: "VALIDATION_ERROR", message: "password is required", details: { field: "password" }, traceId: "01HX..." }
+        '401':
+          description: Неверные данные
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                bad_creds:
+                  value: { code: "UNAUTHORIZED", message: "invalid credentials", traceId: "01HX..." }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Логаут (клиентский/логический)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Logged out" }
+              examples:
+                ok:
+                  value: { message: "Logged out" }
+        '401':
+          description: Нет/невалидный токен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/ExampleUnauthorized'
+
+  /me:
+    get:
+      tags: [Users]
+      summary: Текущий пользователь
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+              examples:
+                ok:
+                  value: { user: { id: 1, email: "admin@t1.ru", role: "ADMIN" } }
+        '401':
+          description: Нет/невалидный токен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/ExampleUnauthorized'
+
+  /offices:
+    get:
+      tags: [Offices]
+      summary: Список офисов
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfficeListResponse' }
+              examples:
+                ok:
+                  value:
+                    offices:
+                      - { id: 10, name: "HQ Т1", address: "ул. Пушкина, д. 1", city: "Москва", country: "Россия" }
+                      - { id: 11, name: "СПБ Хаб", address: "Невский пр., 100", city: "Санкт‑Петербург", country: "Россия" }
+        '401':
+          description: Нет токена
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { unauthorized: { $ref: '#/components/examples/ExampleUnauthorized' } } } }
+
+    post:
+      tags: [Offices]
+      summary: Создать офис
+      description: Требует роль ADMIN или MODERATOR
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfficeCreateRequest' }
+            examples:
+              create:
+                value: { name: "HQ Т1", address: "ул. Пушкина, 1", city: "Москва", country: "Россия" }
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfficeCreateResponse' }
+              examples:
+                created:
+                  value: { id: 12 }
+        '400':
+          description: Пустые/невалидные поля
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                empty:
+                  value: { code: "VALIDATION_ERROR", message: "name must not be blank", details: { field: "name" }, traceId: "01HX..." }
+        '401':
+          description: Нет токена
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { unauthorized: { $ref: '#/components/examples/ExampleUnauthorized' } } } }
+        '403':
+          description: Недостаточно прав (роль не ADMIN|MODERATOR)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { forbidden: { $ref: '#/components/examples/ExampleForbidden' } } } }
+
+  /offices/{officeId}:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+    put:
+      tags: [Offices]
+      summary: Частичное обновление офиса
+      description: Требует роль ADMIN или MODERATOR
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfficeUpdateRequest' }
+            examples:
+              patch:
+                value: { address: "ул. Ленина, 25" }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: boolean, example: true }
+              examples:
+                ok:
+                  value: { updated: true }
+        '401': { description: Нет токена, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { unauthorized: { $ref: '#/components/examples/ExampleUnauthorized' } } } } }
+        '403': { description: Нет прав, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { forbidden: { $ref: '#/components/examples/ExampleForbidden' } } } } }
+        '404': { description: Офис не найден, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } } }
+    delete:
+      tags: [Offices]
+      summary: Удалить офис
+      description: Требует роль ADMIN или MODERATOR
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Удалено без тела }
+        '401': { description: Нет токена, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { unauthorized: { $ref: '#/components/examples/ExampleUnauthorized' } } } } }
+        '403': { description: Нет прав, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { forbidden: { $ref: '#/components/examples/ExampleForbidden' } } } } }
+        '409':
+          description: У офиса есть этажи (нет каскадного удаления)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                hasFloors:
+                  $ref: '#/components/examples/ExampleConflictOfficeHasFloors'
+
+  /offices/{officeId}/floors:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Floors]
+      summary: Список этажей офиса
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FloorListResponse' }
+              examples:
+                ok:
+                  value: { floors: [ { id: 101, number: 1 }, { id: 102, number: 2 } ] }
+        '404':
+          description: Офис не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+    post:
+      tags: [Floors]
+      summary: Создать этаж
+      description: |
+        Автоматически создаётся firesafe-слой «Пожарный план». Номер этажа уникален в рамках офиса.
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FloorCreateRequest' }
+            examples:
+              create:
+                value: { floorNumber: 3 }
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FloorCreateResponse' }
+              examples:
+                created:
+                  value: { floorId: 103 }
+        '404':
+          description: Офис не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+        '409':
+          description: Дубликат номера этажа
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                duplicate:
+                  $ref: '#/components/examples/ExampleValidationFloorDuplicate'
+
+  /offices/{officeId}/floors/{floorId}:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Floors]
+      summary: Детали этажа
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Floor' }
+              examples:
+                ok:
+                  value: { id: 101, number: 1, imageUrl: "https://cdn.example.com/floors/101.png" }
+        '404':
+          description: Этаж не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/plan-image:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Floor Images]
+      summary: Загрузка план-схемы этажа
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Загружено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl: { type: string }
+                  updatedAt: { type: string, format: date-time }
+              examples:
+                ok:
+                  value: { imageUrl: "https://cdn.example.com/floors/101.png", updatedAt: "2025-08-20T12:00:00Z" }
+        '400':
+          description: Файл не передан/пустой
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { nofile: { code: "VALIDATION_ERROR", message: "image is required", traceId: "01HX..." } } } }
+        '404':
+          description: Этаж не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+        '413':
+          description: Файл слишком большой
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { tooLarge: { $ref: '#/components/examples/ExamplePayloadTooLarge' } } } }
+        '415':
+          description: Неподдерживаемый MIME
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { badMime: { $ref: '#/components/examples/ExampleUnsupportedMediaType' } } } }
+    get:
+      tags: [Floor Images]
+      summary: Получить URL план-схемы этажа
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl: { type: string }
+                  updatedAt: { type: string, format: date-time, nullable: true }
+              examples:
+                ok:
+                  value: { imageUrl: "https://cdn.example.com/floors/101.png", updatedAt: null }
+        '404':
+          description: План не задан
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/firesafe-image:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Floor Images]
+      summary: Загрузка пожарного плана (firesafe)
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Загружено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl: { type: string }
+                  updatedAt: { type: string, format: date-time }
+              examples:
+                ok:
+                  value: { imageUrl: "https://cdn.example.com/firesafe/101.png", updatedAt: "2025-08-20T12:00:00Z" }
+        '400': { description: Файл не передан/пустой, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { nofile: { code: "VALIDATION_ERROR", message: "image is required", traceId: "01HX..." } } } } }
+        '404': { description: Этаж не найден, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } } }
+        '413': { description: Файл слишком большой, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { tooLarge: { $ref: '#/components/examples/ExamplePayloadTooLarge' } } } } }
+        '415': { description: Неподдерживаемый MIME, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { badMime: { $ref: '#/components/examples/ExampleUnsupportedMediaType' } } } } }
+    get:
+      tags: [Floor Images]
+      summary: Получить URL пожарного плана
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl: { type: string }
+                  updatedAt: { type: string, format: date-time, nullable: true }
+              examples:
+                ok:
+                  value: { imageUrl: "https://cdn.example.com/firesafe/101.png", updatedAt: null }
+        '404':
+          description: Пожарный план не задан
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/layers:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Layers]
+      summary: Список слоёв этажа
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  layers:
+                    type: array
+                    items: { $ref: '#/components/schemas/LayerListItem' }
+              examples:
+                ok:
+                  value:
+                    layers:
+                      - { id: 201, name: "Пожарный план", type: "firesafe", hasImage: true }
+                      - { id: 202, name: "Департаменты", type: "custom" }
+    post:
+      tags: [Layers]
+      summary: Создать слой (custom)
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LayerCreateRequest' }
+            examples:
+              create:
+                value: { name: "Рабочие места" }
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  layerId: { type: integer }
+                  name: { type: string }
+              examples:
+                created:
+                  value: { layerId: 203, name: "Рабочие места" }
+        '400':
+          description: Неверные данные
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { bad: { code: "VALIDATION_ERROR", message: "name must not be blank", details: { field: "name" }, traceId: "01HX..." } } } }
+        '404':
+          description: Этаж не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/layers/{layerId}:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: layerId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Layers]
+      summary: Детали слоя
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Layer' }
+              examples:
+                firesafe:
+                  value: { id: 201, name: "Пожарный план", type: "firesafe", imageUrl: "https://cdn.example.com/firesafe/101.png" }
+                custom:
+                  value:
+                    id: 202
+                    name: "Департаменты"
+                    type: "custom"
+                    zones:
+                      - { id: 301, name: "R&D", status: "free", coordinates: [10,10, 100,10, 100,100, 10,100, 10,10, 55,55] }
+        '404':
+          description: Слой не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+    delete:
+      tags: [Layers]
+      summary: Удалить слой (кроме firesafe)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Удалён без тела }
+        '400':
+          description: Нельзя удалить firesafe-слой
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { badType: { code: "LAYER_TYPE_FORBIDDEN", message: "Cannot delete firesafe layer", traceId: "01HX..." } } } }
+        '404': { description: Слой не найден, content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } } }
+
+  /offices/{officeId}/floors/{floorId}/layers/{layerId}/zones:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: layerId
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Zones]
+      summary: Создать зону (только для custom-слоя)
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZoneCreateRequest' }
+            examples:
+              create:
+                value: { name: "Коворкинг", status: "free", coordinates: [0,0, 90,0, 90,60, 0,60, 0,0, 45,30] }
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ZoneCreateResponse' }
+              examples:
+                created:
+                  value: { zoneId: 301, coordinates: [0,0, 90,0, 90,60, 0,60, 0,0, 45,30] }
+        '400':
+          description: Ошибка валидации; попытка создать зону на не-custom слое; самопересекающийся полигон
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                coords:
+                  $ref: '#/components/examples/ExampleValidationCoordinates'
+                notCustom:
+                  value: { code: "LAYER_TYPE_FORBIDDEN", message: "Zones are not allowed for firesafe layer", traceId: "01HX..." }
+                selfIntersect:
+                  value: { code: "VALIDATION_ERROR", message: "Polygon is self-intersecting", details: { field: "coordinates" }, traceId: "01HX..." }
+        '404':
+          description: Слой не найден
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/layers/{layerId}/zones/{zoneId}:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: layerId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: zoneId
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Zones]
+      summary: Частичное изменение зоны
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZonePatchRequest' }
+            examples:
+              patch:
+                value: { name: "Опенспейс", status: "occupied" }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: boolean, example: true }
+              examples:
+                ok:
+                  value: { updated: true }
+        '400':
+          description: Ошибка валидации (в т.ч. координаты < 6 чисел, нечётное число координат, самопересечение полигона)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { coords: { $ref: '#/components/examples/ExampleValidationCoordinates' } } } }
+        '404':
+          description: Зона не найдена
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, examples: { notFound: { $ref: '#/components/examples/ExampleNotFound' } } } }
+
+  /offices/{officeId}/floors/{floorId}/zones/{zoneId}/objects:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: zoneId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Zone Objects]
+      summary: Список объектов в зоне
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ZoneObject' }
+              examples:
+                ok:
+                  value:
+                    - { id: 501, zoneId: 301, zoneInventoryId: 901, x: 12.3, y: 45.6, rotation: 0, catalog: { id: "chair", displayName: "Стул офисный", iconKey: "chair-01", category: "furniture" } }
+                    - { id: 502, zoneId: 301, zoneInventoryId: 902, x: 22.0, y: 50.0, rotation: 90, catalog: { id: "desk", displayName: "Стол", iconKey: "desk-02", category: "furniture" } }
+        '400':
+          description: Некорректный zoneId
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                badId:
+                  value: { code: "VALIDATION_ERROR", message: "zoneId must be a positive integer", details: { field: "zoneId" }, traceId: "01HX..." }
+    post:
+      tags: [Zone Objects]
+      summary: Создать объект в зоне (занимает 1 слот ZoneInventory)
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZoneObjectCreateRequest' }
+            examples:
+              create:
+                value: { zoneInventoryId: 901, x: 10.0, y: 20.0, rotation: 0 }
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ZoneObject' }
+              examples:
+                created:
+                  value: { id: 503, zoneId: 301, zoneInventoryId: 901, x: 10.0, y: 20.0, rotation: 0, catalog: { id: "chair", displayName: "Стул офисный", iconKey: "chair-01", category: "furniture" } }
+        '400':
+          description: Ошибка валидации (например, нечисловые координаты); нехватка слотов ZoneInventory
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                noSlots:
+                  value: { code: "INSUFFICIENT_STOCK", message: "No available slots in ZoneInventory#901", traceId: "01HX..." }
+                badPayload:
+                  value: { code: "VALIDATION_ERROR", message: "x must be a number", details: { field: "x" }, traceId: "01HX..." }
+        '404':
+          description: Зона/ZoneInventory не найдены или ZoneInventory не принадлежит зоне
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invNotBelongs:
+                  value: { code: "NOT_FOUND", message: "ZoneInventory#901 does not belong to Zone#301", traceId: "01HX..." }
+
+  /offices/{officeId}/floors/{floorId}/zones/{zoneId}/objects/{id}:
+    parameters:
+      - in: path
+        name: officeId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: floorId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: zoneId
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Zone Objects]
+      summary: Обновить координаты/поворот объекта
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZoneObjectPatchRequest' }
+            examples:
+              move:
+                value: { x: 33.3, y: 44.4, rotation: 15 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ZoneObject' }
+              examples:
+                ok:
+                  value: { id: 501, zoneId: 301, zoneInventoryId: 901, x: 33.3, y: 44.4, rotation: 15, catalog: { id: "chair", displayName: "Стул офисный", iconKey: "chair-01", category: "furniture" } }
+        '404':
+          description: Объект не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  $ref: '#/components/examples/ExampleNotFound'
+    delete:
+      tags: [Zone Objects]
+      summary: Удалить объект из зоны
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Удалено }
+        '404':
+          description: Объект не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  $ref: '#/components/examples/ExampleNotFound'

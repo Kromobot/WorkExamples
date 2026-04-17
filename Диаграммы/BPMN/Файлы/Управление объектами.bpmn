@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" id="Defs_ManageObjects_v1" targetNamespace="http://example.com/bpmn/objects/manage" exporter="Camunda Modeler" exporterVersion="5.38.0">
+  <process id="process_manage_objects" name="Управление объектами" isExecutable="false">
+    <startEvent id="Start" name="Начало" />
+    <userTask id="UT_OpenModule" name="Открыть модуль «Объекты»" />
+    <serviceTask id="ST_CheckPerms" name="Проверка прав доступа" />
+    <exclusiveGateway id="GX_Perms" name="Права достаточно?" />
+    <endEvent id="End_NoAccess" name="Доступ запрещён" />
+    <userTask id="UT_SelectAction" name="Выбрать действие" />
+    <exclusiveGateway id="GX_Action_1" name="Создать?" />
+    <userTask id="UT_SelectLayerZone" name="Выбрать слой/зону" />
+    <userTask id="UT_SelectTypeCatalog" name="Выбрать тип из каталога" />
+    <userTask id="UT_PlaceOnPlan" name="Разместить на плане">
+      <outgoing>Flow_1lc4r6q</outgoing>
+    </userTask>
+    <serviceTask id="ST_SaveCreate" name="Сохранить новый объект">
+      <incoming>Flow_1lc4r6q</incoming>
+    </serviceTask>
+    <exclusiveGateway id="GX_Action_2" name="Редактировать?" />
+    <userTask id="UT_SelectObject_Edit" name="Выбрать объект" />
+    <userTask id="UT_EditProps" name="Изменить свойства/позицию" />
+    <serviceTask id="ST_SaveEdit" name="Сохранить изменения объекта" />
+    <exclusiveGateway id="GX_Action_3" name="Удалить?">
+      <outgoing>Flow_0fc2gq9</outgoing>
+    </exclusiveGateway>
+    <userTask id="UT_SelectObject_Del" name="Выбрать объект" />
+    <userTask id="UT_ConfirmDelete" name="Подтвердить удаление" />
+    <serviceTask id="ST_DoDelete" name="Удалить объект из БД" />
+    <serviceTask id="ST_RefreshMap" name="Обновить карту/отображение">
+      <incoming>Flow_0fc2gq9</incoming>
+    </serviceTask>
+    <endEvent id="End_Success" name="Изменения применены" />
+    <sequenceFlow id="F1" sourceRef="Start" targetRef="UT_OpenModule" />
+    <sequenceFlow id="F2" sourceRef="UT_OpenModule" targetRef="ST_CheckPerms" />
+    <sequenceFlow id="F3" sourceRef="ST_CheckPerms" targetRef="GX_Perms" />
+    <sequenceFlow id="F4_yes" name="да" sourceRef="GX_Perms" targetRef="UT_SelectAction" />
+    <sequenceFlow id="F4_no" name="нет" sourceRef="GX_Perms" targetRef="End_NoAccess" />
+    <sequenceFlow id="F5" sourceRef="UT_SelectAction" targetRef="GX_Action_1" />
+    <sequenceFlow id="F6_create" name="да" sourceRef="GX_Action_1" targetRef="UT_SelectLayerZone" />
+    <sequenceFlow id="F6_else" name="нет" sourceRef="GX_Action_1" targetRef="GX_Action_2" />
+    <sequenceFlow id="F7" sourceRef="UT_SelectLayerZone" targetRef="UT_SelectTypeCatalog" />
+    <sequenceFlow id="F8" sourceRef="UT_SelectTypeCatalog" targetRef="UT_PlaceOnPlan" />
+    <sequenceFlow id="F10" sourceRef="ST_SaveCreate" targetRef="ST_RefreshMap" />
+    <sequenceFlow id="F11_edit" name="да" sourceRef="GX_Action_2" targetRef="UT_SelectObject_Edit" />
+    <sequenceFlow id="F11_else" name="нет" sourceRef="GX_Action_2" targetRef="GX_Action_3" />
+    <sequenceFlow id="F12" sourceRef="UT_SelectObject_Edit" targetRef="UT_EditProps" />
+    <sequenceFlow id="F13" sourceRef="UT_EditProps" targetRef="ST_SaveEdit" />
+    <sequenceFlow id="F14" sourceRef="ST_SaveEdit" targetRef="ST_RefreshMap" />
+    <sequenceFlow id="F15_delete" name="да" sourceRef="GX_Action_3" targetRef="UT_SelectObject_Del" />
+    <sequenceFlow id="F16" sourceRef="UT_SelectObject_Del" targetRef="UT_ConfirmDelete" />
+    <sequenceFlow id="F17" sourceRef="UT_ConfirmDelete" targetRef="ST_DoDelete" />
+    <sequenceFlow id="F18" sourceRef="ST_DoDelete" targetRef="ST_RefreshMap" />
+    <sequenceFlow id="F19" sourceRef="ST_RefreshMap" targetRef="End_Success" />
+    <sequenceFlow id="Flow_0fc2gq9" name="Нет" sourceRef="GX_Action_3" targetRef="ST_RefreshMap" />
+    <sequenceFlow id="Flow_1lc4r6q" sourceRef="UT_PlaceOnPlan" targetRef="ST_SaveCreate" />
+  </process>
+  <bpmndi:BPMNDiagram id="DI_ManageObjects_v1">
+    <bpmndi:BPMNPlane id="Plane_ManageObjects_v1" bpmnElement="process_manage_objects">
+      <bpmndi:BPMNShape id="DI_Start" bpmnElement="Start">
+        <omgdc:Bounds x="152" y="287" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="151" y="323" width="39" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_OpenModule" bpmnElement="UT_OpenModule">
+        <omgdc:Bounds x="270" y="275" width="320" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_CheckPerms" bpmnElement="ST_CheckPerms">
+        <omgdc:Bounds x="670" y="275" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Perms" bpmnElement="GX_Perms" isMarkerVisible="true">
+        <omgdc:Bounds x="1085" y="280" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1145" y="291" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_NoAccess" bpmnElement="End_NoAccess">
+        <omgdc:Bounds x="1352" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1326" y="428" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectAction" bpmnElement="UT_SelectAction">
+        <omgdc:Bounds x="1160" y="140" width="300" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_1" bpmnElement="GX_Action_1" isMarkerVisible="true">
+        <omgdc:Bounds x="1615" y="145" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1675" y="163" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectLayerZone" bpmnElement="UT_SelectLayerZone">
+        <omgdc:Bounds x="1880" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectTypeCatalog" bpmnElement="UT_SelectTypeCatalog">
+        <omgdc:Bounds x="2190" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_PlaceOnPlan" bpmnElement="UT_PlaceOnPlan">
+        <omgdc:Bounds x="2530" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_SaveCreate" bpmnElement="ST_SaveCreate">
+        <omgdc:Bounds x="2860" y="80" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_2" bpmnElement="GX_Action_2" isMarkerVisible="true">
+        <omgdc:Bounds x="1745" y="250" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1728" y="226" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectObject_Edit" bpmnElement="UT_SelectObject_Edit">
+        <omgdc:Bounds x="1880" y="245" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_EditProps" bpmnElement="UT_EditProps">
+        <omgdc:Bounds x="2190" y="245" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_SaveEdit" bpmnElement="ST_SaveEdit">
+        <omgdc:Bounds x="2530" y="245" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_GX_Action_3" bpmnElement="GX_Action_3" isMarkerVisible="true">
+        <omgdc:Bounds x="1795" y="400" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1855" y="418" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_SelectObject_Del" bpmnElement="UT_SelectObject_Del">
+        <omgdc:Bounds x="1890" y="530" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_UT_ConfirmDelete" bpmnElement="UT_ConfirmDelete">
+        <omgdc:Bounds x="2190" y="530" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_DoDelete" bpmnElement="ST_DoDelete">
+        <omgdc:Bounds x="2520" y="530" width="260" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_ST_RefreshMap" bpmnElement="ST_RefreshMap">
+        <omgdc:Bounds x="2980" y="245" width="280" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_Success" bpmnElement="End_Success">
+        <omgdc:Bounds x="3422" y="257" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="3410" y="303" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DE_F1" bpmnElement="F1">
+        <omgdi:waypoint x="188" y="305" />
+        <omgdi:waypoint x="270" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F2" bpmnElement="F2">
+        <omgdi:waypoint x="590" y="305" />
+        <omgdi:waypoint x="670" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F3" bpmnElement="F3">
+        <omgdi:waypoint x="930" y="305" />
+        <omgdi:waypoint x="1085" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F4_yes" bpmnElement="F4_yes">
+        <omgdi:waypoint x="1110" y="280" />
+        <omgdi:waypoint x="1110" y="170" />
+        <omgdi:waypoint x="1160" y="170" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1119" y="209" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F4_no" bpmnElement="F4_no">
+        <omgdi:waypoint x="1110" y="330" />
+        <omgdi:waypoint x="1110" y="410" />
+        <omgdi:waypoint x="1352" y="410" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1131" y="378" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F5" bpmnElement="F5">
+        <omgdi:waypoint x="1460" y="170" />
+        <omgdi:waypoint x="1615" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F6_create" bpmnElement="F6_create">
+        <omgdi:waypoint x="1640" y="145" />
+        <omgdi:waypoint x="1640" y="110" />
+        <omgdi:waypoint x="1880" y="110" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1649" y="115" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F6_else" bpmnElement="F6_else">
+        <omgdi:waypoint x="1640" y="195" />
+        <omgdi:waypoint x="1640" y="275" />
+        <omgdi:waypoint x="1745" y="275" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1646" y="220" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F7" bpmnElement="F7">
+        <omgdi:waypoint x="2140" y="110" />
+        <omgdi:waypoint x="2190" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F8" bpmnElement="F8">
+        <omgdi:waypoint x="2450" y="110" />
+        <omgdi:waypoint x="2530" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F10" bpmnElement="F10">
+        <omgdi:waypoint x="3120" y="130" />
+        <omgdi:waypoint x="3120" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F11_edit" bpmnElement="F11_edit">
+        <omgdi:waypoint x="1795" y="275" />
+        <omgdi:waypoint x="1880" y="275" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1796" y="253" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F11_else" bpmnElement="F11_else">
+        <omgdi:waypoint x="1770" y="300" />
+        <omgdi:waypoint x="1770" y="425" />
+        <omgdi:waypoint x="1795" y="425" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1776" y="352" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F12" bpmnElement="F12">
+        <omgdi:waypoint x="2140" y="275" />
+        <omgdi:waypoint x="2190" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F13" bpmnElement="F13">
+        <omgdi:waypoint x="2450" y="275" />
+        <omgdi:waypoint x="2530" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F14" bpmnElement="F14">
+        <omgdi:waypoint x="2790" y="275" />
+        <omgdi:waypoint x="2980" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F15_delete" bpmnElement="F15_delete">
+        <omgdi:waypoint x="1820" y="450" />
+        <omgdi:waypoint x="1820" y="560" />
+        <omgdi:waypoint x="1890" y="560" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1846" y="538" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F16" bpmnElement="F16">
+        <omgdi:waypoint x="2150" y="560" />
+        <omgdi:waypoint x="2190" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F17" bpmnElement="F17">
+        <omgdi:waypoint x="2450" y="560" />
+        <omgdi:waypoint x="2520" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F18" bpmnElement="F18">
+        <omgdi:waypoint x="2780" y="560" />
+        <omgdi:waypoint x="3120" y="560" />
+        <omgdi:waypoint x="3120" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DE_F19" bpmnElement="F19">
+        <omgdi:waypoint x="3260" y="275" />
+        <omgdi:waypoint x="3422" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0fc2gq9_di" bpmnElement="Flow_0fc2gq9">
+        <omgdi:waypoint x="1820" y="400" />
+        <omgdi:waypoint x="1820" y="370" />
+        <omgdi:waypoint x="3120" y="370" />
+        <omgdi:waypoint x="3120" y="305" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="2460" y="352" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lc4r6q_di" bpmnElement="Flow_1lc4r6q">
+        <omgdi:waypoint x="2790" y="110" />
+        <omgdi:waypoint x="2860" y="110" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

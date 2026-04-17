@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             id="Defs_SearchEntities"
+             targetNamespace="http://example.com/bpmn/search">
+  <process id="process_search" name="Поиск объектов и зон (общий путь)" isExecutable="false">
+    <startEvent id="StartEvent_Search" name="Начало"/>
+    <userTask id="UserTask_OpenSearch" name="Открыть поиск"/>
+    <userTask id="UserTask_InputQuery" name="Ввести запрос (имя/ID/атрибут)"/>
+    <serviceTask id="ServiceTask_ExecuteSearch" name="Система выполняет поиск"/>
+    <serviceTask id="ServiceTask_ShowResults" name="Система показывает список результатов"/>
+    <userTask id="UserTask_SelectResult" name="Выбрать объект/зону из списка"/>
+    <serviceTask id="ServiceTask_ShowOnMap" name="Система подсвечивает на карте и открывает карточку"/>
+    <endEvent id="EndEvent_SearchDone" name="Результат найден и показан"/>
+
+    <sequenceFlow id="Flow_s1" sourceRef="StartEvent_Search" targetRef="UserTask_OpenSearch"/>
+    <sequenceFlow id="Flow_s2" sourceRef="UserTask_OpenSearch" targetRef="UserTask_InputQuery"/>
+    <sequenceFlow id="Flow_s3" sourceRef="UserTask_InputQuery" targetRef="ServiceTask_ExecuteSearch"/>
+    <sequenceFlow id="Flow_s4" sourceRef="ServiceTask_ExecuteSearch" targetRef="ServiceTask_ShowResults"/>
+    <sequenceFlow id="Flow_s5" sourceRef="ServiceTask_ShowResults" targetRef="UserTask_SelectResult"/>
+    <sequenceFlow id="Flow_s6" sourceRef="UserTask_SelectResult" targetRef="ServiceTask_ShowOnMap"/>
+    <sequenceFlow id="Flow_s7" sourceRef="ServiceTask_ShowOnMap" targetRef="EndEvent_SearchDone"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Search">
+    <bpmndi:BPMNPlane id="BPMNPlane_Search" bpmnElement="process_search">
+      <bpmndi:BPMNShape id="Shape_StartEvent_Search" bpmnElement="StartEvent_Search">
+        <omgdc:Bounds x="120" y="150" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_UserTask_OpenSearch" bpmnElement="UserTask_OpenSearch">
+        <omgdc:Bounds x="200" y="138" width="180" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_UserTask_InputQuery" bpmnElement="UserTask_InputQuery">
+        <omgdc:Bounds x="420" y="138" width="260" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_ServiceTask_ExecuteSearch" bpmnElement="ServiceTask_ExecuteSearch">
+        <omgdc:Bounds x="720" y="138" width="220" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_ServiceTask_ShowResults" bpmnElement="ServiceTask_ShowResults">
+        <omgdc:Bounds x="980" y="138" width="260" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_UserTask_SelectResult" bpmnElement="UserTask_SelectResult">
+        <omgdc:Bounds x="1280" y="138" width="240" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_ServiceTask_ShowOnMap" bpmnElement="ServiceTask_ShowOnMap">
+        <omgdc:Bounds x="1560" y="138" width="300" height="60"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_EndEvent_SearchDone" bpmnElement="EndEvent_SearchDone">
+        <omgdc:Bounds x="1890" y="150" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Edge_Flow_s1" bpmnElement="Flow_s1">
+        <omgdi:waypoint x="156" y="168"/>
+        <omgdi:waypoint x="200" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s2" bpmnElement="Flow_s2">
+        <omgdi:waypoint x="380" y="168"/>
+        <omgdi:waypoint x="420" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s3" bpmnElement="Flow_s3">
+        <omgdi:waypoint x="680" y="168"/>
+        <omgdi:waypoint x="720" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s4" bpmnElement="Flow_s4">
+        <omgdi:waypoint x="940" y="168"/>
+        <omgdi:waypoint x="980" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s5" bpmnElement="Flow_s5">
+        <omgdi:waypoint x="1240" y="168"/>
+        <omgdi:waypoint x="1280" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s6" bpmnElement="Flow_s6">
+        <omgdi:waypoint x="1520" y="168"/>
+        <omgdi:waypoint x="1560" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_s7" bpmnElement="Flow_s7">
+        <omgdi:waypoint x="1860" y="168"/>
+        <omgdi:waypoint x="1890" y="168"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
